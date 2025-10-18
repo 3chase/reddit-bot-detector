@@ -1,0 +1,38 @@
+# Python-specific
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+venv/
+.venv/
+env/
+.env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editor/IDE specific
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Docker-specific
+.dockerignore
+docker-compose.yml # If it's for local development and not intended for deployment
+*.log
+
+# Environment variables
+.env
+.flaskenv
+
+# Data files (if not meant to be version controlled)
+*.sqlite3
+*.db
+*.csv
+*.json # If generated data
