@@ -36,3 +36,12 @@ docker-compose.yml # If it's for local development and not intended for deployme
 *.db
 *.csv
 *.json # If generated data
+
+#Project specific
+.models/
+models/
+.data/
+data/
+known_bots.py
+known_humans.py
+training_data.csv

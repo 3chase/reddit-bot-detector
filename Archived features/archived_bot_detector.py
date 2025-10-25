@@ -1,11 +1,11 @@
 import praw
 from dotenv import load_dotenv
 import os
-from account_activity_check import AccountActivityCheck
-from user_data_fetcher import UserDataFetcher
-from account_content_check import AccountContentCheck
-from account_subbreddit_content_check import AccountSubbredditContentCheck
-from account_general_search import AccountGeneralSearch
+from src.account_activity_check import AccountActivityCheck
+from src.user_data_fetcher import UserDataFetcher
+from src.account_content_check import AccountContentCheck
+from src.account_subbreddit_content_check import AccountSubbredditContentCheck
+from src.account_general_search import AccountGeneralSearch
 
 load_dotenv()
 client_id = os.getenv("REDDIT_CLIENT_ID")
@@ -23,12 +23,36 @@ target_sub = "reddit_bot_test"
 trigger_phrase = "!CheckForBot"
 subreddit = reddit.subreddit(target_sub)
 
-#list of bot accounts TelephoneNorth2971, CarpetLongjumping876, PerformanceHot6349
+#list of bot accounts TelephoneNorth2971, CarpetLongjumping876, PerformanceHot6349, Few-Olive-6259
 def main():
-    reddit_user = reddit.redditor("Few-Olive-6259")
+    reddit_user = reddit.redditor("Wizardwizz")
+    fetcher = UserDataFetcher(reddit_user)
+    user_info = fetcher.get_data()
+    print(user_info.oldest_timestamp)
     
-    current_query = UserDataFetcher(reddit_user)
+    
+    
+
+    
+    
+    
+
+            
+if __name__ == "__main__":
+    main()
+
+
+"""# check every comment in the subreddit
+    for comment in subreddit.stream.comments():
+        # check the trigger_phrase in each comment
+        if trigger_phrase in comment.body:"""
+"""
+current_query = UserDataFetcher(reddit_user)
     user_info = current_query.get_data()
+
+
+
+   
     current_query = AccountActivityCheck(user_info.comment_karma, user_info.link_karma, user_info.timestamps, user_info.account_age)
     results = current_query.execute_check()
     print(f"--- Detection Results ---")
@@ -39,7 +63,7 @@ def main():
     print(f"-----------------------")
     
 
-    """
+    
     current_query = AccountSubbredditContentCheck(user_info.subreddits)
     results = current_query.execute_check()
     print(f"--- Detection Results ---")
@@ -48,7 +72,7 @@ def main():
     print(f"Confidence Score: {results.confidence_score:.0%}")
     print(f"Details: {results.details}")
     print(f"-----------------------")
-    """
+    
 
    
     
@@ -69,15 +93,4 @@ def main():
     print(f"Confidence Score: {results.confidence_score:.0%}")
     print(f"Details: {results.details}")
     print(f"-----------------------")
-    
-    
-
-            
-if __name__ == "__main__":
-    main()
-
-
-"""# check every comment in the subreddit
-    for comment in subreddit.stream.comments():
-        # check the trigger_phrase in each comment
-        if trigger_phrase in comment.body:"""
+"""

@@ -1,10 +1,7 @@
-from i_detection_rule import IDecetionRule
+from src.i_detection_rule import IDecetionRule
 import time
-from detection_result import DetectionResults
+# from detection_result import DetectionResults archived
 
-#Checks if the account 
-# 1. Posts/Comments frequently in top subrredits (Karma farming sign)
-# 2. Posts/Comments frequently in scam/hustle/spam subreddits (typical for a bot)
 
 BOT_FREQUENTED_SUBREDDITS = {
     'nextfuckinglevel', 'publicfreakout', 'starterpacks', 'mademesmile',
@@ -14,15 +11,15 @@ BOT_FREQUENTED_SUBREDDITS = {
     'unpopularopinion', 'jokes', 'todayilearned', 'pics', 'holup',
     'thatsinsane', 'dankmemes', 'damnthatsinteresting', 'guysbeingdudes', 
     'murderedbywords', 'clevercomebacks', 'explainthejoke', 'peterexplainsthejoke',
-    'interesting'
+    'interesting', 'sipstea', 'guysbeingdudes'
 }
 BOT_TYPICAL_TOPICS = {
-
+    #crypto topics
     'crypto', 'blockchain', 'bitcoin', 'etherum', 'dogecoin', 'nft',
-
+    #investing/moneymaking topics
     'stocks', 'wallstreet', 'pennystock', 'daytrade', 'forex', 
     'passiveincome', 'hustle', 'grind', 'dropship', 'money', 'buy'
-
+    #etc
     'onlyfans', 'fansly', 'camgirl', 'shirt', 'hoodie', 'merch', 
     'essay', 'homework', 'vpn', 'nootropic', 'supplement', 'sarm', 'free',
     'nsfw'
@@ -30,7 +27,17 @@ BOT_TYPICAL_TOPICS = {
 
 
 class AccountSubbredditContentCheck(IDecetionRule):
-    def __init__(self, subreddits_frequents: list[str]):
+    """
+    This class determins patterns based on a users activity in certain subreddits
+
+    Attributes:
+        subreddits_frequents (set[str]): All the subreddits a user participates in based on the last 200 posts and 200 comments
+
+    Values the class finds:
+        1. The ratio of popular subreddit participation to all participation
+        2. The ratio of scammy topic subreddit participation to all participation
+    """
+    def __init__(self, subreddits_frequents: set[str]):
         self.subreddits_frequents = subreddits_frequents
         self.subreddits_popular = BOT_FREQUENTED_SUBREDDITS
         self.subreddits_scammy = BOT_TYPICAL_TOPICS
@@ -56,7 +63,14 @@ class AccountSubbredditContentCheck(IDecetionRule):
                     total += 1
                     break 
         return total / len(self.subreddits_frequents)
-
+    
+    def get_features(self) -> dict:
+        features = {
+            "popular_subreddits_ratio": self.__check_popular_subbreddit_frequency__(),
+            "scammy_subreddits_ratio": self.__check_scammy_subbreddit_frequency__()
+        }
+        return features
+    """
     def execute_check(self) -> DetectionResults:
         rule_name = "Popular Subreddit Check"
         popular_subreddits_ratio = self.__check_popular_subbreddit_frequency__()
@@ -76,3 +90,4 @@ class AccountSubbredditContentCheck(IDecetionRule):
             details = " ".join(details)
         )
         return(results)
+        """

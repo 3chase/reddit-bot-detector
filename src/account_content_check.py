@@ -1,15 +1,18 @@
-from i_detection_rule import IDecetionRule
-from detection_result import DetectionResults
+from src.i_detection_rule import IDecetionRule
+#from detection_result import DetectionResults archived
 import praw
 from thefuzz import fuzz
 from googleapiclient.discovery import build
 import os
 from time import sleep
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+"""Add total amount of activity, and posts comments containing links"""
 
 
-#Takes a string of comments and searches google for the top two google links
-#Then praw runs on the top two links getting the top 10 comments 
-#If the users comments matchh up, the code returns the potential matches
+"""To be refactored using ArcticShift Api"""
 class SearchReddit:
     def __init__(self, reddit_name: str, comments: list[str], praw_instance: praw.Reddit):
         self.reddit_name = reddit_name
@@ -66,10 +69,21 @@ class SearchReddit:
     def execute_matches(self):
         return self.__match_copy__()
     
-#Checks an account if
-#1. The majority of the users comments are short (generic phrases)
-#2. They have copied comments of other users (karma farming)
+
 class AccountContentCheck(IDecetionRule):
+    """
+    This class gets related information of a user relating with the content of a users comments
+
+    Attributes:
+        reddit_name (str): Returns the name of the user's account
+        comments (list[str]): Returns the list of the accounts 50 most recent comments
+        praw_instance (praw.Reddit): An authenticated PRAW Reddit instance
+
+    Values the class finds:
+        1. The ratio of comments under 20 characters to the total amount of comments
+        2. The pairwise similarity score of the 10 most recent comments on a user's account
+        3. Checks the 3 most recent comments to see if they had been plagiarized from another user
+    """
     def __init__(self, reddit_name: str, comments: list[str], post_titles: list[str], praw_instance: praw.Reddit):
         self.reddit_name = reddit_name
         self.comments = comments
@@ -79,26 +93,58 @@ class AccountContentCheck(IDecetionRule):
         #cut offs for hueristics  
         self.SHORT_COMMENT_RATIO = 0.2
 
-    #returns the ratio of the number of short comments
     def __check_length_comments__(self):
+        SHORT_CUTOFF = 20
         if not self.comments:
             return 0
         short = 0
         for comment in self.comments:
-            if len(comment) < 20:
+            if len(comment) < SHORT_CUTOFF:
                 short += 1
         return short / len(self.comments)
-        
-    #returns the duplicated top comments based on the users recent 5 comments    
-    def __check_repeated_comments__(self):
-        if(len(self.comments) >= 3):
-            first_3_comments = self.comments[:3]
+    
+    def __get_average_comment_similarity__(self):
+        """Finds the linguistic similarity of a users most recent COMMENT_LIMIT comments
+        """
+        COMMENT_LIMIT = 15
+        if len(self.comments) < 2:
+            return 0.0
+        if(len(self.comments) >= COMMENT_LIMIT):
+            first_x_comments = self.comments[:COMMENT_LIMIT]
         else:
-            first_3_comments = self.comments
-        searcher = SearchReddit(self.reddit_name, first_3_comments, self.praw_instance)
+            first_x_comments = self.comments
+        vectorizer = TfidfVectorizer(stop_words='english') #Uses Term Frequency and Inverse Document Frequency
+        tfidf_matrix = vectorizer.fit_transform(first_x_comments)
+        cosine_sim_matrix = cosine_similarity(tfidf_matrix) #Finds similarity between each comment
+        upper_triangle_indices = np.triu_indices(len(first_x_comments), k=1) #Uses upper triangle to avoid reduntant comparisons
+        pairwise_similarity_scores = cosine_sim_matrix[upper_triangle_indices]
+        if pairwise_similarity_scores.size == 0:
+            return 0.0
+        return pairwise_similarity_scores.mean() #returns average of the scores
+    
+    #returns the duplicated top comments based on the users recent X comments    
+    def __check_repeated_comments__(self):
+        """Finds COMMENT_LIMIT comments that are plagiarized using the SearchReddit class
+        """
+        COMMENT_LIMIT = 3
+        if(len(self.comments) >= COMMENT_LIMIT):
+            first_x_comments = self.comments[:COMMENT_LIMIT]
+        else:
+            first_x_comments = self.comments
+        searcher = SearchReddit(self.reddit_name, first_x_comments, self.praw_instance)
         matches = searcher.execute_matches()
         return {k: v for k, v in matches.items() if v}
     
+    def get_features(self) -> dict:
+        features = {
+            "short_comment_ratio": self.__check_length_comments__(),
+            "avg_comment_similarity": self.__get_average_comment_similarity__()
+        }
+        return features
+    
+
+
+    """
     def execute_check(self) -> DetectionResults:
         rule_name = "Account of short or similair comments check"
         short_comment_ratio = self.__check_length_comments__() 
@@ -128,6 +174,6 @@ class AccountContentCheck(IDecetionRule):
         )
         return(results)
         
-
+"""
         
     
